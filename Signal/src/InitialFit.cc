@@ -89,9 +89,9 @@ void InitialFit::buildDCBplusGaussian(string name){
     RooRealVar*dm_dcb = new RooRealVar(Form("dm_mh%d_dcb",mh),Form("dm_mh%d_dcb",mh), 0.,-5.,5.);
     RooAbsReal *mean_dcb = new RooFormulaVar(Form("mean_mh%d_dcb",mh),Form("mean_mh%d_dcb",mh),"@0+@1",RooArgList(*MH,*dm_dcb));
     RooRealVar *sigma_dcb = new RooRealVar(Form("sigma_mh%d_dcb",mh),Form("sigma_mh%d_dcb",mh), 2., 1.0, 20.);
-    RooRealVar *a1_dcb = new RooRealVar(Form("a1_mh%d_dcb",mh),Form("a1_mh%d_dcb",mh), 5., 0.01, 100.);   
-    RooRealVar *a2_dcb = new RooRealVar(Form("a2_mh%d_dcb",mh),Form("a2_mh%d_dcb",mh), 5., 0.01, 100.);   
-    RooRealVar *n1_dcb = new RooRealVar(Form("n1_mh%d_dcb",mh),Form("n1_mh%d_dcb",mh), 20.,2.0001,500.);
+    RooRealVar *a1_dcb = new RooRealVar(Form("a1_mh%d_dcb",mh),Form("a1_mh%d_dcb",mh), 1., 0.01, 100.);   
+    RooRealVar *a2_dcb = new RooRealVar(Form("a2_mh%d_dcb",mh),Form("a2_mh%d_dcb",mh), 1., 0.01, 100.);   
+    RooRealVar *n1_dcb = new RooRealVar(Form("n1_mh%d_dcb",mh),Form("n1_mh%d_dcb",mh), 5.,2.0001,500.);
     RooRealVar *n2_dcb = new RooRealVar(Form("n2_mh%d_dcb",mh),Form("n2_mh%d_dcb",mh), 20.,2.0001,500);
     RooAbsPdf *pdf_dcb = new RooDoubleCBFast(Form("dcb_mh%d",mh),Form("dcb_mh%d",mh), *mass,*mean_dcb,*sigma_dcb, *a1_dcb, *n1_dcb, *a2_dcb, *n2_dcb);
     //RooRealVar*dm_gaus = new RooRealVar(Form("dm_mh%d_gaus",mh),Form("dm_mh%d_gaus",mh), 0.,-5.,5.);
@@ -106,6 +106,76 @@ void InitialFit::buildDCBplusGaussian(string name){
     tempFitParams.insert(pair<string,RooRealVar*>(string(dm_dcb->GetName()),dm_dcb));
     tempFitParams.insert(pair<string,RooRealVar*>(string(sigma_dcb->GetName()),sigma_dcb));
     tempFitParams.insert(pair<string,RooRealVar*>(string(frac_gaus->GetName()),frac_gaus));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(n1_dcb->GetName()),n1_dcb));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(n2_dcb->GetName()),n2_dcb));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(a1_dcb->GetName()),a1_dcb));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(a2_dcb->GetName()),a2_dcb));
+    
+    fitPdfs.insert(pair<int,RooAbsPdf*>(mh,pdf));
+    fitParams.insert(pair<int,map<string,RooRealVar*> >(mh,tempFitParams));
+  }
+}
+
+void InitialFit::buildCBplusGaussian(string name){
+  
+  for (unsigned int i=0; i<allMH_.size(); i++){
+    int mh = allMH_[i];
+    MH->setConstant(false);
+    MH->setVal(mh);
+    MH->setConstant(true);
+    map<string,RooRealVar*> tempFitParams;
+    map<string,RooAbsReal*> tempFitUtils;
+    map<string,RooAbsPdf*> tempGaussians;
+    RooRealVar*dm_cb = new RooRealVar(Form("dm_mh%d_cb",mh),Form("dm_mh%d_cb",mh), 0.325,-0.5,0.5);
+    RooAbsReal *mean_cb = new RooFormulaVar(Form("mean_mh%d_cb",mh),Form("mean_mh%d_cb",mh),"@0+@1",RooArgList(*MH,*dm_cb));
+    RooRealVar *sigma_cb = new RooRealVar(Form("sigma_mh%d_cb",mh),Form("sigma_mh%d_cb",mh), 1.4381, 1., 2.);
+    RooRealVar *a1_cb = new RooRealVar(Form("a1_mh%d_cb",mh),Form("a1_mh%d_cb",mh), 0.812478, 0.1, 1.);   
+    RooRealVar *n1_cb = new RooRealVar(Form("n1_mh%d_cb",mh),Form("n1_mh%d_cb",mh), 3.90456,2,5.);
+    RooAbsPdf *pdf_cb = new  RooCBShape(Form("cb_mh%d",mh),Form("cb_mh%d",mh), *mass,*mean_cb,*sigma_cb, *a1_cb, *n1_cb);
+
+    RooRealVar *dm_gaus = new RooRealVar(Form("dm_mh%d_gaus",mh),Form("dm_mh%d_gaus",mh), 0.027,-0.5,0.5);
+    RooAbsReal *mean_gaus = new RooFormulaVar(Form("mean_mh%d_gaus",mh),Form("mean_mh%d_gaus",mh),"@0+@1",RooArgList(*MH,*dm_gaus));
+    RooRealVar *sigma_gaus = new RooRealVar(Form("sigma_mh%d_gaus",mh),Form("sigma_mh%d_gaus",mh),2.51646,1.,4.); 
+    RooGaussian *pdf_gaus = new RooGaussian(Form("gaus_mh%d",mh),Form("gaus_mh%d",mh),*mass,*mean_gaus,*sigma_gaus);
+    RooRealVar *frac_gaus = new RooRealVar(Form("frac_mh%d",mh),Form("frac_mh%d",mh),0.5,0.4,0.6);
+
+    RooAddPdf *pdf = new RooAddPdf(Form("%s_mh%d",name.c_str(),mh),Form("%s_mh%d",name.c_str(),mh),*pdf_cb,*pdf_gaus,*frac_gaus);
+    
+    tempFitParams.insert(pair<string,RooRealVar*>(string(sigma_gaus->GetName()),sigma_gaus));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(dm_cb->GetName()),dm_cb));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(sigma_cb->GetName()),sigma_cb));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(dm_gaus->GetName()),dm_gaus));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(frac_gaus->GetName()),frac_gaus));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(n1_cb->GetName()),n1_cb));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(a1_cb->GetName()),a1_cb));
+    
+    fitPdfs.insert(pair<int,RooAbsPdf*>(mh,pdf));
+    fitParams.insert(pair<int,map<string,RooRealVar*> >(mh,tempFitParams));
+  }
+}
+
+// this method builds the DCB
+void InitialFit::buildDCB(string name){
+  
+  for (unsigned int i=0; i<allMH_.size(); i++){
+    int mh = allMH_[i];
+    MH->setConstant(false);
+    MH->setVal(mh);
+    MH->setConstant(true);
+    map<string,RooRealVar*> tempFitParams;
+    map<string,RooAbsReal*> tempFitUtils;
+    map<string,RooAbsPdf*> tempGaussians;
+    RooRealVar *dm_dcb = new RooRealVar(Form("dm_mh%d_dcb",mh),Form("dm_mh%d_dcb",mh), -0.1,-0.5,0.5);
+    RooAbsReal *mean_dcb = new RooFormulaVar(Form("mean_mh%d_dcb",mh),Form("mean_mh%d_dcb",mh),"@0+@1",RooArgList(*MH,*dm_dcb));
+    RooRealVar *sigma_dcb = new RooRealVar(Form("sigma_mh%d_dcb",mh),Form("sigma_mh%d_dcb",mh), 1, 0.1, 5);
+    RooRealVar *a1_dcb = new RooRealVar(Form("a1_mh%d_dcb",mh),Form("a1_mh%d_dcb",mh), 1., 1, 10.);   
+    RooRealVar *a2_dcb = new RooRealVar(Form("a2_mh%d_dcb",mh),Form("a2_mh%d_dcb",mh), 2., 1, 10.);   
+    RooRealVar *n1_dcb = new RooRealVar(Form("n1_mh%d_dcb",mh),Form("n1_mh%d_dcb",mh), 4.,1,5);
+    RooRealVar *n2_dcb = new RooRealVar(Form("n2_mh%d_dcb",mh),Form("n2_mh%d_dcb",mh), 10.,1,20);
+    RooAbsPdf *pdf = new RooDoubleCBFast(Form("dcb_mh%d",mh),Form("dcb_mh%d",mh), *mass,*mean_dcb,*sigma_dcb, *a1_dcb, *n1_dcb, *a2_dcb, *n2_dcb);
+    
+    tempFitParams.insert(pair<string,RooRealVar*>(string(dm_dcb->GetName()),dm_dcb));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(sigma_dcb->GetName()),sigma_dcb));
     tempFitParams.insert(pair<string,RooRealVar*>(string(n1_dcb->GetName()),n1_dcb));
     tempFitParams.insert(pair<string,RooRealVar*>(string(n2_dcb->GetName()),n2_dcb));
     tempFitParams.insert(pair<string,RooRealVar*>(string(a1_dcb->GetName()),a1_dcb));

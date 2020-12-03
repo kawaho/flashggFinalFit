@@ -1,0 +1,9 @@
++JobFlavour = "espresso"
+
+executable  = /afs/hep.wisc.edu/user/kaho/CMSSW_10_2_16_UL/src/flashggFinalFit/Background/bkgPlots-Data/sub2.sh
+output  = /afs/hep.wisc.edu/user/kaho/CMSSW_10_2_16_UL/src/flashggFinalFit/Background/bkgPlots-Data/sub2.out
+error  = /afs/hep.wisc.edu/user/kaho/CMSSW_10_2_16_UL/src/flashggFinalFit/Background/bkgPlots-Data/sub2.err
+log  = /afs/hep.wisc.edu/user/kaho/CMSSW_10_2_16_UL/src/flashggFinalFit/Background/bkgPlots-Data/sub2.log
+
+max_retries = 1
+queue 1

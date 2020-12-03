@@ -8,11 +8,11 @@ parser.add_option("-d","--outDir",default="BkgPlots",help="Out directory for plo
 parser.add_option("-c","--cats",type="int",help="Number of categories to run")
 parser.add_option("-f","--flashggCats",help="flashggCats : UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag")
 parser.add_option("-l","--catLabels",default="mk_default",help="Category labels (comma separated) default will use Category %cat")
-parser.add_option("-S","--sqrts",type='int',default=8,help="Sqrt(S) COM energy for finding strings etc")
-parser.add_option("--intLumi",type='float',default=0.,help="integrated lumi")
+parser.add_option("-S","--sqrts",type='int',default=13,help="Sqrt(S) COM energy for finding strings etc")
+parser.add_option("--intLumi",type='float',default=137,help="integrated lumi")
 parser.add_option("--year",default='2016',help="Dataset year")
-parser.add_option("-H","--high",type='int',default=100,help="Sqrt(S) COM energy for finding strings etc")
-parser.add_option("-L","--low",type='int',default=180,help="Sqrt(S) COM energy for finding strings etc")
+parser.add_option("-H","--high",type='int',default=160,help="Sqrt(S) COM energy for finding strings etc")
+parser.add_option("-L","--low",type='int',default=110,help="Sqrt(S) COM energy for finding strings etc")
 parser.add_option("--isMultiPdf",default=False,action="store_true",help="Use for multipdf workspaces")
 parser.add_option("--doBands",default=False,action="store_true",help="Use to draw bands")
 parser.add_option("--useBinnedData",default=False,action="store_true",help="Use binned data")
@@ -30,6 +30,7 @@ parser.add_option("-v","--verbose",default=False,action="store_true",help="Print
 
 import os
 import subprocess
+import re
 
 os.system('mkdir -p %s'%options.outDir)
 
@@ -70,7 +71,7 @@ for cat in range(ncats):
   if options.higgsResolution:
     execLine += ' --higgsResolution %s'%(options.higgsResolution)
   if options.sigfilename:
-    execLine += ' -s %s'%(options.sigfilename.replace('.root','_%s.root')%options.catLabels[cat])
+    execLine += ' -s %s'%(options.sigfilename)
   if options.unblind:
     execLine += ' --unblind'
   if options.isMultiPdf:

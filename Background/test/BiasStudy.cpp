@@ -190,7 +190,7 @@ std::cout << "DEBUG LC 1 " <<std::endl;
     exit(1);
   }
 
-  RooRealVar *mass = (RooRealVar*)bkgWS->var("CMS_hgg_mass");
+  RooRealVar *mass = (RooRealVar*)bkgWS->var("CMS_emu_Mass");
   RooRealVar *mu = new RooRealVar("mu","mu",0.,mu_low,mu_high);
 
 std::cout << "DEBUG LC 2 " <<std::endl;
@@ -234,24 +234,25 @@ std::cout << "DEBUG LC 2.1 " <<std::endl;
   //TH1F *muDistAIC = new TH1F("muDistAIC","muDistAIC",int(20*(mu_high-mu_low)),mu_low,mu_high);
   
   mass->setBins(160); // is this too fine for the signal MC?
-  RooDataSet *data = (RooDataSet*)bkgWS->data(Form("data_mass_cat%d",cat));
+  std::cout << "debug lc 2..0002 " <<std::endl;
+  RooDataSet *data = (RooDataSet*)bkgWS->data(Form("roohist_data_mass_ggcat%d",cat));
   std::cout << "debug lc 2.2.1 , cat "<< cat <<std::endl;
   //RooDataSet *data = (RooDataSet*)bkgWS->data(Form("data_cat%d_7TeV",cat));
-  RooDataHist *dataBinned = new RooDataHist(Form("roohist_data_mass_cat%d",cat),Form("roohist_data_mass_cat%d",cat),RooArgSet(*mass),*data);
+  RooDataHist *dataBinned = new RooDataHist(Form("roohist_data_mass_ggcat%d",cat),Form("roohist_data_mass_ggcat%d",cat),RooArgSet(*mass),*data);
   std::cout << "debug lc 2.2.1.1 " <<std::endl;
-  RooDataSet *sigMC = (RooDataSet*)sigWS->data(Form("sig_ggh_mass_m%d_cat%d",expectSignalMass,cat));
+  RooDataSet *sigMC = (RooDataSet*)sigWS->data(Form("data_ggcat%d_ggH",cat));
   std::cout << "debug lc 2.2.2 " <<std::endl;
-  RooDataSet *sigMC_vbf = (RooDataSet*)sigWS->data(Form("sig_vbf_mass_m%d_cat%d",expectSignalMass,cat));
-  RooDataSet *sigMC_wh = (RooDataSet*)sigWS->data(Form("sig_wh_mass_m%d_cat%d",expectSignalMass,cat));
-  RooDataSet *sigMC_zh = (RooDataSet*)sigWS->data(Form("sig_zh_mass_m%d_cat%d",expectSignalMass,cat));
+  RooDataSet *sigMC_vbf = (RooDataSet*)sigWS->data(Form("data_ggcat%d_qqH",cat));
+//  RooDataSet *sigMC_wh = (RooDataSet*)sigWS->data(Form("sig_wh_mass_m%d_cat%d",expectSignalMass,cat));
+//  RooDataSet *sigMC_zh = (RooDataSet*)sigWS->data(Form("sig_zh_mass_m%d_cat%d",expectSignalMass,cat));
   std::cout << "debug lc 2.2.3 " <<std::endl;
-  RooDataSet *sigMC_tth = (RooDataSet*)sigWS->data(Form("sig_tth_mass_m%d_cat%d",expectSignalMass,cat));
+//  RooDataSet *sigMC_tth = (RooDataSet*)sigWS->data(Form("sig_tth_mass_m%d_cat%d",expectSignalMass,cat));
   std::cout << "Signal Model Building " << std::endl; 
-  sigMC->Print(); sigMC_vbf->Print(); sigMC_wh->Print();sigMC_zh->Print();sigMC_tth->Print();
+  sigMC->Print(); sigMC_vbf->Print(); //sigMC_wh->Print();sigMC_zh->Print();sigMC_tth->Print();
   sigMC->append(*sigMC_vbf);
-  sigMC->append(*sigMC_wh);
-  sigMC->append(*sigMC_zh);
-  sigMC->append(*sigMC_tth);
+//  sigMC->append(*sigMC_wh);
+//  sigMC->append(*sigMC_zh);
+//  sigMC->append(*sigMC_tth);
   //RooExtendPdf *ggh_pdf = (RooExtendPdf*)sigWS->pdf(Form("sigpdfsmrel_cat%d_7TeV_ggh",cat));
   //RooExtendPdf *vbf_pdf = (RooExtendPdf*)sigWS->pdf(Form("sigpdfsmrel_cat%d_7TeV_vbf",cat));
   //RooExtendPdf *wzh_pdf = (RooExtendPdf*)sigWS->pdf(Form("sigpdfsmrel_cat%d_7TeV_wzh",cat));

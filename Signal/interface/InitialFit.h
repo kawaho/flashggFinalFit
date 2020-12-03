@@ -22,7 +22,9 @@ class InitialFit {
     ~InitialFit();
 
     void buildDCBplusGaussian(std::string name);
+    void buildDCB(std::string name);
     void buildSumOfGaussians(std::string name, int nGaussians, bool recursive=false, bool forceFracUnity=false);
+    void buildCBplusGaussian(std::string name);
     void loadPriorConstraints(std::string filename, float constraintValue);
     void saveParamsToFile(std::string filename);
     void saveParamsToFileAtMH(std::string filename, int setMH);

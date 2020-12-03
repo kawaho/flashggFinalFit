@@ -4,7 +4,7 @@
 // There are a few different algorithms written, the default
 // and most robust is guessNew() but it is very slow!!!
 // If you would like to write something smarter that would be great!!
-
+#include "TGaxis.h"
 #include "TF1.h"
 #include "TMatrixD.h"
 #include "TFile.h"
@@ -13,6 +13,7 @@
 #include "TDirectory.h"
 #include "TH1F.h"
 #include "TGraphAsymmErrors.h"
+#include "TPaveText.h"
 #include "RooDataSet.h"
 #include "RooDataHist.h"
 #include "RooMsgService.h"
@@ -67,67 +68,69 @@ bool verbose_=false;
 
 RooRealVar *intLumi_ = new RooRealVar("IntLumi","hacked int lumi", 1000.);
 
-int getBestFitFunction(RooMultiPdf *bkg, RooAbsData *data, RooCategory *cat, bool silent=false){
+int getBestFitFunction(string catname, RooMultiPdf *bkg, RooAbsData *data, RooCategory *cat, bool silent=false){
 
-	double global_minNll = 1E10;
-	int best_index = 0;
-	int number_of_indeces = cat->numTypes();
-	
-	RooArgSet snap,clean;
-	RooArgSet *params = bkg->getParameters(*data);
-	params->snapshot(snap);
-	params->snapshot(clean);
-	if (!silent) {
-		std::cout << "[INFO] CLEAN SET OF PARAMETERS" << std::endl;
-		params->Print("V");
-		std::cout << "-----------------------" << std::endl;
-	}
-	
-	//bkg->setDirtyInhibit(1);
-	RooAbsReal *nllm = bkg->createNLL(*data);
-	RooMinimizer minim(*nllm);
-	minim.setStrategy(2);
-	
-	for (int id=0;id<number_of_indeces;id++){		
-		params->assignValueOnly(clean);
-		cat->setIndex(id);
-
-		//RooAbsReal *nllm = bkg->getCurrentPdf()->createNLL(*data);
-
-		if (!silent) {
-			std::cout << "[INFO] BEFORE FITTING" << std::endl;
-			params->Print("V");
-			std::cout << "-----------------------" << std::endl;
-		}
-		
-		minim.minimize("Minuit2","simplex");
-		double minNll = nllm->getVal()+bkg->getCorrection();
-		if (!silent) {
-			std::cout << "[INFO] After Minimization ------------------  " <<std::endl;
-			std::cout << "[INFO] "<<bkg->getCurrentPdf()->GetName() << " " << minNll <<std::endl;
-			bkg->Print("v");
-			bkg->getCurrentPdf()->getParameters(*data)->Print("V");
-			std::cout << " ------------------------------------  " << std::endl;
-	
-			std::cout << "[INFO] AFTER FITTING" << std::endl;
-			params->Print("V");
-			std::cout << "-----------------------" << std::endl;
-		}
-			
-		if (minNll < global_minNll){
-        		global_minNll = minNll;
-			snap.assignValueOnly(*params);
-        		best_index=id;
-		}
-	}
-	params->assignValueOnly(snap);
-    	cat->setIndex(best_index);
-	
-	if (!silent) {
-		std::cout << "[INFO] Best fit Function -- " << bkg->getCurrentPdf()->GetName() << " " << cat->getIndex() <<std::endl;
-		bkg->getCurrentPdf()->getParameters(*data)->Print("v");
-	}
-	return best_index;
+        map<string, int> best_pdf_map { { "ggcat0", 2}, { "ggcat1", 2}, {"ggcat2", 1}, { "ggcat3", 0}, { "ggcat4", 0}, {"vbf", 2} };
+return best_pdf_map[catname];
+//	double global_minNll = 1E10;
+//	int best_index = 0;
+//	int number_of_indeces = cat->numTypes();
+//	
+//	RooArgSet snap,clean;
+//	RooArgSet *params = bkg->getParameters(*data);
+//	params->snapshot(snap);
+//	params->snapshot(clean);
+//	if (!silent) {
+//		std::cout << "[INFO] CLEAN SET OF PARAMETERS" << std::endl;
+//		params->Print("V");
+//		std::cout << "-----------------------" << std::endl;
+//	}
+//	
+//	//bkg->setDirtyInhibit(1);
+//	RooAbsReal *nllm = bkg->createNLL(*data);
+//	RooMinimizer minim(*nllm);
+//	minim.setStrategy(2);
+//	
+//	for (int id=0;id<number_of_indeces;id++){		
+//		params->assignValueOnly(clean);
+//		cat->setIndex(id);
+//
+//		//RooAbsReal *nllm = bkg->getCurrentPdf()->createNLL(*data);
+//
+//		if (!silent) {
+//			std::cout << "[INFO] BEFORE FITTING" << std::endl;
+//			params->Print("V");
+//			std::cout << "-----------------------" << std::endl;
+//		}
+//		
+//		minim.minimize("Minuit2","simplex");
+//		double minNll = nllm->getVal()+bkg->getCorrection();
+//		if (!silent) {
+//			std::cout << "[INFO] After Minimization ------------------  " <<std::endl;
+//			std::cout << "[INFO] "<<bkg->getCurrentPdf()->GetName() << " " << minNll <<std::endl;
+//			bkg->Print("v");
+//			bkg->getCurrentPdf()->getParameters(*data)->Print("V");
+//			std::cout << " ------------------------------------  " << std::endl;
+//	
+//			std::cout << "[INFO] AFTER FITTING" << std::endl;
+//			params->Print("V");
+//			std::cout << "-----------------------" << std::endl;
+//		}
+//			
+//		if (minNll < global_minNll){
+//        		global_minNll = minNll;
+//			snap.assignValueOnly(*params);
+//        		best_index=id;
+//		}
+//	}
+//	params->assignValueOnly(snap);
+//    	cat->setIndex(best_index);
+//	
+//	if (!silent) {
+//		std::cout << "[INFO] Best fit Function -- " << bkg->getCurrentPdf()->GetName() << " " << cat->getIndex() <<std::endl;
+//		bkg->getCurrentPdf()->getParameters(*data)->Print("v");
+//	}
+//	return best_index;
 }
 
 RooMultiPdf* getExtendedMultiPdfs(RooMultiPdf* mpdf, RooCategory* mcat){
@@ -527,7 +530,7 @@ TGraph* profNorm(RooMultiPdf *mpdf, RooCategory *mcat, RooAbsData *data, RooReal
 	TGraph *grNllPer[mpdf->getNumPdfs()];
 	for (int i=0; i<mpdf->getNumPdfs(); i++) grNllPer[i] = new TGraph();
 	
-	int color[10] = {kBlue,kOrange,kGreen,kRed,kMagenta,kPink,kViolet,kCyan,kYellow,kBlack};
+	int color[10] = {kBlue,kOrange,kGreen,kRed,kMagenta,kPink,kViolet,kCyan,kOrange,kBlack};
 	int p=0;
 	//for (double scanVal=80; scanVal<151; scanVal++){
 	for (double scanVal=lowRange; scanVal<highRange+scanStep; scanVal+=scanStep){
@@ -592,7 +595,7 @@ TGraph* profNorm(RooMultiPdf *mpdf, RooCategory *mcat, RooAbsData *data, RooReal
 void profileExtendTerm(RooRealVar *mgg, RooAbsData *data, RooMultiPdf *mpdf, RooCategory *mcat, string name, double lowR, double highR, double massRangeLow=-1., double massRangeHigh=-1.){
 
 	cout << "[INFO] "<< "Profiling extended term" << endl;
-	int color[10] = {kBlue,kOrange,kGreen,kRed,kMagenta,kPink,kViolet,kCyan,kYellow,kBlack};
+	int color[10] = {kBlue,kOrange,kGreen,kRed,kMagenta,kPink,kViolet,kCyan,kOrange,kBlack};
 	double globMinNll=1.e8;
 	double globMinVal;
 	for (int pInd=0; pInd<mpdf->getNumPdfs(); pInd++){
@@ -645,25 +648,26 @@ void plotAllPdfs(RooRealVar *mgg, RooAbsData *data, RooMultiPdf *mpdf, RooCatego
 		catname = Form("cat%d",cat);
 	}
 	RooPlot *plot = mgg->frame();
-	plot->SetTitle(Form("Background functions profiled for category %s",catname.c_str()));
-	plot->GetXaxis()->SetTitle("m_{#gamma#gamma} (GeV)");
-	plot->GetYaxis()->SetTitle("Events");
+//	plot->SetTitle(Form("Background functions profiled for category %s",catname.c_str()));
+//	plot->GetXaxis()->SetTitle("m_{#gamma#gamma} (GeV)");
+//	plot->GetYaxis()->SetTitle("Events");
 	if (!unblind) {
-		mgg->setRange("unblind_up",135,180);
-		mgg->setRange("unblind_down",100,115);
-		data->plotOn(plot,Binning(80),CutRange("unblind_down,unblind_up"));
+		mgg->setRange("unblind_up",130,160);
+		mgg->setRange("unblind_down",110,120);
+		data->plotOn(plot,Binning(50),CutRange("unblind_down,unblind_up"));
 	}
 	else {
-		data->plotOn(plot,Binning(80));
+		data->plotOn(plot,Binning(50));
 	}
 
-	TLegend *leg = new TLegend(0.6,0.4,0.9,0.9);
+	TLegend *leg = new TLegend(0.4,0.4,0.9,0.9);
 	leg->SetFillColor(0);
 	leg->SetLineColor(0);
 	leg->SetBorderSize(0);
-	leg->SetTextSize(0.03);
+        leg->SetTextFont(62);
+	leg->SetTextSize(0.5);
 
-	int color[10] = {kBlue,kOrange,kGreen,kRed,kMagenta,kPink,kViolet,kCyan,kYellow,kBlack};
+	int color[10] = {kBlue,kOrange,kGreen,kRed,kMagenta,kPink,kViolet,kCyan,kOrange,kBlack};
 	for (int pInd=0; pInd<mpdf->getNumPdfs(); pInd++){
 		mcat->setIndex(pInd);
 		// Always refit since we cannot be sure the best fit pdf is being fitted
@@ -683,9 +687,11 @@ void plotAllPdfs(RooRealVar *mgg, RooAbsData *data, RooMultiPdf *mpdf, RooCatego
 		leg->AddEntry(legObj,prettyName.c_str(),"L");
 	}
 
-	TCanvas *canv = new TCanvas();
+        TCanvas *canv = new TCanvas("canvas","",0,0,800,800);
+        canv->SetLeftMargin(0.14);
+        canv->SetRightMargin(0.05);
 	plot->Draw();
-	if (!unblind) plot->SetMinimum(0.0001);
+	if (!unblind) plot->SetMinimum(0.00001);
 	leg->Draw();
   TString catLabel_humanReadable = TString(catname);
   catLabel_humanReadable.ReplaceAll("RECO_","");
@@ -700,12 +706,12 @@ void plotAllPdfs(RooRealVar *mgg, RooAbsData *data, RooMultiPdf *mpdf, RooCatego
   lat2.SetTextAlign(33);
   lat2.SetNDC(1);
   lat2.SetTextSize(0.04);
-  lat2.Draw("same");
+//  lat2.Draw("same");
 	canv->Modified();
 	canv->Update();
   lumi_sqrtS = Form("%s (13 TeV, %d)",lumi_13TeV.Data(),year);
   std::string txt="";
-  CMS_lumi( canv, 0,0,txt);
+//  CMS_lumi( canv, 0,0,txt);
 	canv->Print(Form("%s.pdf",name.c_str()));
 	canv->Print(Form("%s.png",name.c_str()));
 	canv->Print(Form("%s.C",name.c_str()));
@@ -766,15 +772,15 @@ int main(int argc, char* argv[]){
 		("makeCrossCheckProfPlots",																													"Make some cross check plots -- very slow!")
 		("massStep,m", po::value<double>(&massStep)->default_value(0.5),						   			"Mass step for calculating bands. Use a large number like 5 for quick running")
 		("nllTolerance,n", po::value<double>(&nllTolerance)->default_value(0.05),			 			"Tolerance for nll calc in %")
-		("mhLow,L", po::value<int>(&mhLow)->default_value(100),															"Starting point for scan")
-		("mhHigh,H", po::value<int>(&mhHigh)->default_value(180),														"End point for scan")
+		("mhLow,L", po::value<int>(&mhLow)->default_value(110),															"Starting point for scan")
+		("mhHigh,H", po::value<int>(&mhHigh)->default_value(160),														"End point for scan")
 		("mhVal", po::value<double>(&mhvalue_)->default_value(125.),														"Choose the MH for the plots")
 		("higgsResolution", po::value<double>(&higgsResolution_)->default_value(1.),															"Starting point for scan")
-		("intLumi", po::value<float>(&intLumi)->default_value(0.),																"What intLumi in fb^{-1}")
+		("intLumi", po::value<float>(&intLumi)->default_value(137),																"What intLumi in fb^{-1}")
 		("year", po::value<int>(&year_)->default_value(2016),																"Dataset year")
-		("sqrts,S", po::value<int>(&sqrts)->default_value(8),																"Which centre of mass is this data from?")
+		("sqrts,S", po::value<int>(&sqrts)->default_value(13),																"Which centre of mass is this data from?")
 		("isFlashgg",  po::value<int>(&isFlashgg_)->default_value(1),  								    	        "Use Flashgg output ")
-		("flashggCats,f", po::value<string>(&flashggCatsStr_)->default_value("UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag"),       "Flashgg category names to consider")
+		("flashggCats,f", po::value<string>(&flashggCatsStr_)->default_value("vbf"),       "F111lashgg category names to consider")
 		("verbose,v", 																																			"Verbose");
 	;
 	po::variables_map vm;
@@ -792,7 +798,7 @@ int main(int argc, char* argv[]){
 	RooMsgService::instance().setGlobalKillBelow(RooFit::ERROR);
 	RooMsgService::instance().setSilentMode(true);
 	split(flashggCats_,flashggCatsStr_,boost::is_any_of(","));
-  lumi_13TeV =Form("%.1f fb^{-1}",intLumi);	
+  lumi_13TeV =Form("%i fb^{-1}",(int)intLumi);	
 	system(Form("mkdir -p %s",outDir.c_str()));
 	if (makeCrossCheckProfPlots) system(Form("mkdir -p %s/normProfs",outDir.c_str()));
 
@@ -804,7 +810,7 @@ int main(int argc, char* argv[]){
 		cout << "[ERROR] "<< "Cant find the workspace" << endl;
 		exit(0);
 	}
-	RooRealVar *mgg = (RooRealVar*)inWS->var("CMS_hgg_mass");
+	RooRealVar *mgg = (RooRealVar*)inWS->var("CMS_emu_Mass");
   string catname;
 	if (isFlashgg_){
 		catname = Form("%s",flashggCats_[cat].c_str());
@@ -822,10 +828,10 @@ int main(int argc, char* argv[]){
 	RooMultiPdf *mpdf = 0; 
 	RooCategory *mcat = 0;
 	if (isMultiPdf) {
-		mpdf = (RooMultiPdf*)inWS->pdf(Form("CMS_hgg_%s_%dTeV_%d_bkgshape",catname.c_str(),sqrts,year_));
-		mcat = (RooCategory*)inWS->cat(Form("pdfindex_%s_%dTeV_%d",catname.c_str(),sqrts,year_));
+		mpdf = (RooMultiPdf*)inWS->pdf(Form("CMS_hemu_%s_%dTeV_bkgshape",catname.c_str(),sqrts));
+		mcat = (RooCategory*)inWS->cat(Form("pdfindex_%s_%dTeV",catname.c_str(),sqrts));
 		if (!mpdf || !mcat){
-			cout << "[ERROR] "<< "Can't find multipdfs (" << Form("CMS_hgg_%s_%dTeV_%d_bkgshape",catname.c_str(),sqrts,year_) << ") or multicat ("<< Form("pdfindex_%s_%dTeV_%d",catname.c_str(),sqrts,year_) <<")" << endl;
+			cout << "[ERROR] "<< "Can't find multipdfs (" << Form("CMS_hemu_%s_%dTeV_bkgshape",catname.c_str(),sqrts) << ") or multicat ("<< Form("pdfindex_%s_%dTeV",catname.c_str(),sqrts) <<")" << endl;
 			exit(0);
 		}
 	}
@@ -835,7 +841,7 @@ int main(int argc, char* argv[]){
 			cout << "[ERROR] "<< "Cant't find background pdf " << Form("pdf_data_pol_model_%dTeV_%d_%s",sqrts,year_,catname.c_str()) << endl;
 			exit(0);
 		}
-		mcat = new RooCategory(Form("pdfindex_%s_%dTeV_%d",catname.c_str(),sqrts,year_),"c");
+		mcat = new RooCategory(Form("pdfindex_%s_%dTeV",catname.c_str(),sqrts),"c");
 		RooArgList temp;
 		temp.add(*bpdf);
 		mpdf = new RooMultiPdf(Form("tempmpdf_%s",catname.c_str()),"",*mcat,temp);
@@ -863,32 +869,43 @@ int main(int argc, char* argv[]){
 		 */
 
 	// reset to best fit
-	int bf = getBestFitFunction(mpdf,data,mcat,!verbose_);
+	int bf = getBestFitFunction(catname,mpdf,data,mcat,!verbose_);
 	mcat->setIndex(bf);
 	cout<< "[INFO] " << "Best fit PDF and data:" << endl;
 	cout<< "[INFO] " << "\t"; mpdf->getCurrentPdf()->Print();
 	cout<< "[INFO] " << "\t"; data->Print();
 
 	// plot the data
-	TLegend *leg = new TLegend(0.6,0.6,0.89,0.89);
+	TLegend *leg = new TLegend(0.75,0.62,0.95,0.89);
 	leg->SetFillColor(0);
 	leg->SetLineColor(0);
-
+	leg->SetBorderSize(0);
+        leg->SetTextFont(62);
+	//leg->SetTextSize(0.5);
 	cout<< "[INFO] " << "Plotting data and nominal curve" << endl;
 	RooPlot *plot = mgg->frame();
 	RooPlot *plotLC = mgg->frame();
-	plot->GetXaxis()->SetTitle("m_{#gamma#gamma} (GeV)");
+	plot->GetXaxis()->SetTitle("m_{e#mu} [GeV]");
 	plot->SetTitle("");
-	data->plotOn(plot,Binning(80),Invisible());
+	data->plotOn(plot,Binning(50),Invisible());
   ///start extra bit for ratio plot///
   RooHist *plotdata = (RooHist*)plot->getObject(plot->numItems()-1);
   // enf extra bit for ratio plot///
 	TObject *dataLeg = (TObject*)plot->getObject(plot->numItems()-1);
-	mpdf->getCurrentPdf()->plotOn(plot,LineColor(kRed),LineWidth(2));
+	mgg->setRange("unblind_up",130,160);
+	mgg->setRange("unblind_down",110,120);
+	RooFitResult *fitTest = mpdf->getCurrentPdf()->fitTo(*data,RooFit::Save(1),RooFit::Minimizer("Minuit2","minimize"),RooFit::SumW2Error(kTRUE),CutRange("unblind_down,unblind_up")); //FIXME
+	mpdf->getCurrentPdf()->plotOn(plot,VisualizeError(*fitTest,2),FillColor(kOrange));
+	RooCurve *SigmaBand2 = (RooCurve*)plot->getObject(plot->numItems()-1);
+	mpdf->getCurrentPdf()->plotOn(plot,VisualizeError(*fitTest,1),FillColor(kGreen+1));
+	RooCurve *SigmaBand = (RooCurve*)plot->getObject(plot->numItems()-1);
+	mpdf->getCurrentPdf()->plotOn(plot,LineColor(kRed),LineWidth(2), CutRange("unblind_down,unblind_up"));
 	RooCurve *nomBkgCurve = (RooCurve*)plot->getObject(plot->numItems()-1);
-
-	leg->AddEntry(dataLeg,"Data","LEP");
+	leg->AddEntry(dataLeg,Form("Data - %s",catLabel.c_str()),"LEP");
 	leg->AddEntry(nomBkgCurve,"Bkg Fit","L");
+	leg->AddEntry(SigmaBand,"#pm1 s.d.","F");
+	leg->AddEntry(SigmaBand2,"#pm2 s.d.","F");
+//        plot->SetMinimum(100.001); 
 
 	// Bands
 	TGraphAsymmErrors *oneSigmaBand = new TGraphAsymmErrors();
@@ -950,15 +967,16 @@ int main(int argc, char* argv[]){
 			double errHigh1 = errHigh1Value - nomBkg;
 			double errLow2 = nomBkg - errLow2Value;
 			double errHigh2 = errHigh2Value - nomBkg;
-
+                        double xtmp, ytmp;
+                        plotdata->GetPoint(p, xtmp,ytmp);
 			oneSigmaBand->SetPoint(p,center,nomBkg);
-			oneSigmaBand_r->SetPoint(p,center,0);
+			oneSigmaBand_r->SetPoint(p,center,1);
 			twoSigmaBand->SetPoint(p,center,nomBkg);
-			twoSigmaBand_r->SetPoint(p,center,0);
+			twoSigmaBand_r->SetPoint(p,center,1);
 			oneSigmaBand->SetPointError(p,0.,0.,errLow1,errHigh1);
-			oneSigmaBand_r->SetPointError(p,0.,0.,errLow1,errHigh1);
+			oneSigmaBand_r->SetPointError(p,0.,0.,errLow1*ytmp/(nomBkg*nomBkg),errHigh1*ytmp/(nomBkg*nomBkg));
 			twoSigmaBand->SetPointError(p,0.,0.,errLow2,errHigh2);
-			twoSigmaBand_r->SetPointError(p,0.,0.,errLow2,errHigh2);
+			twoSigmaBand_r->SetPointError(p,0.,0.,errLow2*ytmp/(nomBkg*nomBkg),errHigh2*ytmp/(nomBkg*nomBkg));
 
 			cout<< "[INFO] " << "mgg: " << center << " nomBkg: " << nomBkg << " +/- 1 (2) sig -- +" << errHigh1 << "(" << errHigh2 << ")" << " - " << errLow1 << "(" << errLow2 << ")" << endl;
 
@@ -995,7 +1013,7 @@ int main(int argc, char* argv[]){
 		}
 		cout << endl;
 		}
-
+               
 		outFile->cd();
 		oneSigmaBand->Write();
 		twoSigmaBand->Write();
@@ -1003,114 +1021,168 @@ int main(int argc, char* argv[]){
 		outWS->import(*mcat);
 		outWS->import(*mpdf);
 		outWS->import(*data);
-
-		TCanvas *canv = new TCanvas("c","",800,800);
+ 
+//setTDRStyle();
+gStyle->SetFrameLineWidth(3);
+gStyle->SetLineWidth(3);
+gStyle->SetOptStat(0);
+gROOT->SetBatch(true);
+  TCanvas *canv = new TCanvas("canvas","",0,0,800,800);
   ///start extra bit for ratio plot///
   bool doRatioPlot_=1;
   TPad *pad1 = new TPad("pad1","pad1",0,0.25,1,1);
-  TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.35);
+  TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.36);
   pad1->SetBottomMargin(0.18);
-  pad2->SetTopMargin(0.00001);
-  pad2->SetBottomMargin(0.25);
+  pad2->SetTopMargin(0.01);
   pad1->Draw();
   pad2->Draw();
   pad1->cd();
+pad1->SetLeftMargin(0.14);
+pad2->SetLeftMargin(0.14);
+pad1->SetTickx(1);
+pad1->SetTicky(1);
+pad1->SetFrameLineWidth(3);
   // enf extra bit for ratio plot///
-    canv->SetTickx(); canv->SetTicky();
+//    canv->SetTickx(); canv->SetTicky();
 		//RooRealVar *lumi = (RooRealVar*)inWS->var("IntLumi");
 		RooRealVar *lumi = intLumi_;
 		plot->Draw();
-
+                TH1F* histfindmax;
 		if (!unblind) {
-			mgg->setRange("unblind_up",135,180);
-			mgg->setRange("unblind_down",100,115);
-			data->plotOn(plot,Binning(80),CutRange("unblind_down,unblind_up"));
+			mgg->setRange("unblind_up",130,160);
+			mgg->setRange("unblind_down",110,120);
+			data->plotOn(plot,Binning(50),CutRange("unblind_down,unblind_up"));
+                         
+                        histfindmax = (TH1F*) data->createHistogram("",*mgg,Binning(50)); 
 		}
 		else {
-			data->plotOn(plot,Binning(80));
+			data->plotOn(plot,Binning(50));
 		}
 
+plot->GetXaxis()->SetTitleFont(42);
+plot->GetYaxis()->SetTitleFont(42);
+plot->GetXaxis()->SetTitleSize(0.1);
+plot->GetYaxis()->SetTitleSize(0.05);
+plot->GetXaxis()->SetLabelSize(0.045);
+plot->GetYaxis()->SetLabelSize(0.045);
+plot->GetYaxis()->SetTitleOffset(1.2);
+plot->GetXaxis()->SetTitleOffset(9999);
+plot->GetXaxis()->SetLabelOffset(9999);
+
+  plot->SetMaximum(1.5*histfindmax->GetMaximum());
+  plot->SetMinimum(0.00001);
 		if (doBands) {
-			twoSigmaBand->SetLineColor(kYellow);
-			twoSigmaBand->SetFillColor(kYellow);
-			twoSigmaBand->SetMarkerColor(kYellow);
+			twoSigmaBand->SetLineColor(kOrange);
+			twoSigmaBand->SetFillColor(kOrange);
+			twoSigmaBand->SetMarkerColor(kOrange);
 			twoSigmaBand->Draw("L3 SAME");
-			oneSigmaBand->SetLineColor(kGreen);
-			oneSigmaBand->SetFillColor(kGreen);
-			oneSigmaBand->SetMarkerColor(kGreen);
+			oneSigmaBand->SetLineColor(kGreen+1);
+			oneSigmaBand->SetFillColor(kGreen+1);
+			oneSigmaBand->SetMarkerColor(kGreen+1);
 			oneSigmaBand->Draw("L3 SAME");
 			leg->AddEntry(oneSigmaBand,"#pm1#sigma","F");
 			leg->AddEntry(twoSigmaBand,"#pm2#sigma","F");
-			twoSigmaBand_r->SetLineColor(kYellow);
-			twoSigmaBand_r->SetFillColor(kYellow);
-			twoSigmaBand_r->SetMarkerColor(kYellow);
-			oneSigmaBand_r->SetLineColor(kGreen);
-			oneSigmaBand_r->SetFillColor(kGreen);
-			oneSigmaBand_r->SetMarkerColor(kGreen);
+			twoSigmaBand_r->SetLineColor(kOrange);
+			twoSigmaBand_r->SetFillColor(kOrange);
+			twoSigmaBand_r->SetMarkerColor(kOrange);
+			oneSigmaBand_r->SetLineColor(kGreen+1);
+			oneSigmaBand_r->SetFillColor(kGreen+1);
+			oneSigmaBand_r->SetMarkerColor(kGreen+1);
 		}
 
 		if (doSignal){
-      int SignalType=0;
+      int SignalType=1;
 			TFile *sigFile = TFile::Open(sigFileName.c_str());
 		//	RooWorkspace *w_sig = (RooWorkspace*)sigFile->Get("wsig_7TeV");
-	    WSTFileWrapper *w_sig = new WSTFileWrapper(sigFileName,"wsig_13TeV");
+//	    WSTFileWrapper *w_sig = new WSTFileWrapper(sigFileName,"w_13TeV");
 	//		if (!w_sig) w_sig = (RooWorkspace*)sigFile->Get("wsig_8TeV");
 	//		if (!w_sig) w_sig = (RooWorkspace*)sigFile->Get("wsig_13TeV");
-			if (!w_sig) {
-	    WSTFileWrapper *w_sig = new WSTFileWrapper(sigFileName,"cms_hgg_workspace");
+//			if (!w_sig) {
+//	    WSTFileWrapper *w_sig = new WSTFileWrapper(sigFileName,"w_13TeV");
       //w_sig = (RooWorkspace*)sigFile->Get("cms_hgg_workspace");
-      if (w_sig) SignalType=1;
-      }
-			if (!w_sig) {
-				cout << "[INFO] " << "Signal workspace not found" << endl;
-				exit(0);
-			}
+//      if (w_sig) SignalType=1;
+//      }
+//			if (!w_sig) {
+//				cout << "[INFO] " << "Signal workspace not found" << endl;
+//				exit(0);
+//			}
 			if (SignalType==1) {
 				TH1F::SetDefaultSumw2();
-				TH1F *gghHist = (TH1F*)sigFile->Get(Form("th1f_sig_ggh_mass_m125_%s",catname.c_str()));
-				TH1F *vbfHist = (TH1F*)sigFile->Get(Form("th1f_sig_vbf_mass_m125_%s",catname.c_str()));
-				TH1F *wzhHist = (TH1F*)sigFile->Get(Form("th1f_sig_wzh_mass_m125_%s",catname.c_str()));
-				TH1F *tthHist = (TH1F*)sigFile->Get(Form("th1f_sig_tth_mass_m125_%s",catname.c_str()));
-				TH1F *whHist = (TH1F*)sigFile->Get(Form("th1f_sig_wh_mass_m125_%s",catname.c_str()));
-				TH1F *zhHist = (TH1F*)sigFile->Get(Form("th1f_sig_zh_mass_m125_%s",catname.c_str()));
-				TH1F *sigHist = (TH1F*)gghHist->Clone(Form("th1f_sig_mass_m125_%s",catname.c_str()));
-				sigHist->Add(gghHist);
-				sigHist->Add(vbfHist);
-				if (wzhHist) sigHist->Add(wzhHist);
-				if (whHist) sigHist->Add(whHist);
-				if (zhHist) sigHist->Add(zhHist);
-				sigHist->Add(tthHist);
+				TH1F *sigHistorig = (TH1F*)sigFile->Get(Form("TightOS%s/e_m_Mass",catname.c_str()));
+	//			TH1F *vbfHist = (TH1F*)sigFile->Get(Form("TightOS%s/e_m_Mass",catname.c_str()));
+				TH1F *sigHist = (TH1F*)sigHistorig->Clone(Form("%s_e_m_Mass",catname.c_str()));
+				sigHist->Scale(0.2);
+				sigHist->Rebin(100);
 				sigHist->SetLineColor(kBlue);
 				sigHist->SetLineWidth(3);
 				sigHist->SetFillColor(38);
-				sigHist->SetFillStyle(3001);
-				sigHist->Draw("HISTsame");
-				leg->AddEntry(sigHist,"Sig model m_{H}=125GeV","LF");
+				sigHist->SetFillStyle(0);
+				sigHist->Draw("HIST C same");
+				leg->AddEntry(sigHist,"H#rightarrowe#mu (B=0.2%)","L");
 				outFile->cd();
 				sigHist->Write();
 				if (verbose_) cout<< "[INFO] "  << "Plotted binned signal with " << sigHist->Integral() << " entries" << endl;
-				return (0); //FIXME
+//				return (0); //FIXME
 			}
-			else {
-				RooRealVar *MH = (RooRealVar*)w_sig->var("MH");
-				if (!MH) MH = (RooRealVar*)w_sig->var("CMS_hgg_mass");
-				RooAbsPdf *sigPDF = (RooAbsPdf*)w_sig->pdf(Form("sigpdfrel%s_allProcs",catname.c_str()));
-				MH->setVal(mhvalue_);
-				sigPDF->plotOn(plot,Normalization(1.0,RooAbsReal::RelativeExpected),LineColor(kBlue),LineWidth(3));
-				sigPDF->plotOn(plot,Normalization(1.0,RooAbsReal::RelativeExpected),LineColor(kBlue),LineWidth(3),FillColor(38),FillStyle(3001),DrawOption("F"));
-				std::cout << "[INFO] expected number of events in signal PDF " << sigPDF->expectedEvents(*MH) << std::endl;	
-				//sigPDF->plotOn(plot,Normalization(0.001*lumi->getVal()/*get intlumi (/fb) from ws, and divide by 100 for /pb */,RooAbsReal::RelativeExpected),LineColor(kBlue),LineWidth(3));
-				//sigPDF->plotOn(plot,Normalization(0.001*lumi->getVal(),RooAbsReal::RelativeExpected),LineColor(kBlue),LineWidth(3),FillColor(38),FillStyle(3001),DrawOption("F"));
-				sigPDF->plotOn(plotLC,Normalization(1.0,RooAbsReal::RelativeExpected),LineColor(kBlue),LineWidth(3));
-				TObject *sigLeg = (TObject*)plot->getObject(plot->numItems()-1);
-				leg->AddEntry(sigLeg,Form("Sig model m_{H}=%.1fGeV",MH->getVal()),"L");
-				outWS->import(*sigPDF);
-			}
+//			else {
+//				RooRealVar *MH = (RooRealVar*)w_sig->var("MH");
+//				if (!MH) MH = (RooRealVar*)w_sig->var("CMS_emu_Mass");
+//				RooAbsPdf *sigPDF = (RooAbsPdf*)w_sig->pdf(Form("dcb_mh_%s_ext",catname.c_str()));
+//                                MH->setRange("higgsRange",110.,140.);
+//				MH->setVal(mhvalue_);
+//				//sigPDF->plotOn(plot,NormRange("higgsRange"),LineColor(kBlue),LineWidth(3));
+//				//sigPDF->plotOn(plot,NormRange("higgsRange"),LineColor(kBlue),LineWidth(3),FillColor(38),FillStyle(3001),DrawOption("F"));
+//				sigPDF->plotOn(plot,Normalization(1.0,RooAbsReal::RelativeExpected),LineColor(kBlue),LineWidth(3));
+//				sigPDF->plotOn(plot,Normalization(1.0,RooAbsReal::RelativeExpected),LineColor(kBlue),LineWidth(3),FillColor(38),FillStyle(3001),DrawOption("F"));
+//				std::cout << "[INFO] expected number of events in signal PDF " << sigPDF->expectedEvents(*MH) << std::endl;	
+//				//sigPDF->plotOn(plot,Normalization(0.001*lumi->getVal()/*get intlumi (/fb) from ws, and divide by 100 for /pb */,RooAbsReal::RelativeExpected),LineColor(kBlue),LineWidth(3));
+//				//sigPDF->plotOn(plot,Normalization(0.001*lumi->getVal(),RooAbsReal::RelativeExpected),LineColor(kBlue),LineWidth(3),FillColor(38),FillStyle(3001),DrawOption("F"));
+//				sigPDF->plotOn(plotLC,Normalization(1.0,RooAbsReal::RelativeExpected),LineColor(kBlue),LineWidth(3));
+//				TObject *sigLeg = (TObject*)plot->getObject(plot->numItems()-1);
+//				leg->AddEntry(sigLeg,Form("Sig model m_{H}=%.1fGeV",MH->getVal()),"L");
+//				outWS->import(*sigPDF);
+//			}
 		}
 
+                
 		plot->Draw("same");
 		leg->Draw("same");
 
+     double lowX=0.62;
+     double lowY=0.85;
+     auto lumi1  = TPaveText(lowX,lowY, lowX+0.30, lowY+0.2, "NDC");
+     lumi1.SetBorderSize(   0 );
+     lumi1.SetFillStyle(    0 );
+     lumi1.SetTextAlign(   12 );
+     lumi1.SetTextColor(    1 );
+     lumi1.SetTextSize(0.06);
+     lumi1.SetTextFont (   42 );
+     lumi1.AddText("137.2 fb^{-1} (13 TeV)");
+     lumi1.Draw("same");
+ 
+     lowX=0.13;
+     lowY=0.85;
+     auto cmstxt  = TPaveText(lowX, lowY+0.06, lowX+0.15, lowY+0.16, "NDC");
+     cmstxt.SetTextFont(61);
+     cmstxt.SetTextSize(0.08);
+     cmstxt.SetBorderSize(   0 );
+     cmstxt.SetFillStyle(    0 );
+     cmstxt.SetTextAlign(   12 );
+     cmstxt.SetTextColor(    1 );
+     cmstxt.AddText("CMS");
+     cmstxt.Draw("same");
+ 
+     lowX=0.26;
+     lowY=0.85;
+     auto pretxt  = TPaveText(lowX, lowY+0.05, lowX+0.15, lowY+0.15, "NDC");
+     pretxt.SetTextFont(52);
+     pretxt.SetTextSize(0.08*0.8*0.76);
+     pretxt.SetBorderSize(   0 );
+     pretxt.SetFillStyle(    0 );
+     pretxt.SetTextAlign(   12 );
+     pretxt.SetTextColor(    1 );
+     pretxt.AddText("Preliminary");
+     pretxt.Draw("same");
 		TLatex *latex = new TLatex();	
 		latex->SetTextSize(0.045);
 		latex->SetNDC();
@@ -1121,16 +1193,16 @@ int main(int argc, char* argv[]){
 		//cmslatex->drawlatex(0.2,0.85,form("#splitline{cms preliminary}{#sqrt{s} = %dtev l = %2.3ffb^{-1}}",sqrts,intlumi));
 		//cmslatex->DrawLatex(0.25,0.85,Form("#splitline{}{#sqrt{s} = %dTeV L = %2.1ffb^{-1}}",sqrts,intLumi));
     TString catLabel_humanReadable = catLabel;
-    catLabel_humanReadable.ReplaceAll("_"," ");
-    catLabel_humanReadable.ReplaceAll("UntaggedTag","Untagged");
-    catLabel_humanReadable.ReplaceAll("VBFTag","VBF Tag");
-    catLabel_humanReadable.ReplaceAll("TTHLeptonicTag","TTH Leptonic Tag");
-    catLabel_humanReadable.ReplaceAll("TTHHadronicTag","TTH Hadronic Tag");
-		latex->DrawLatex(0.15,0.85,catLabel_humanReadable);
+//    catLabel_humanReadable.ReplaceAll("_"," ");
+//    catLabel_humanReadable.ReplaceAll("UntaggedTag","Untagged");
+//    catLabel_humanReadable.ReplaceAll("VBFTag","VBF Tag");
+//    catLabel_humanReadable.ReplaceAll("TTHLeptonicTag","TTH Leptonic Tag");
+//    catLabel_humanReadable.ReplaceAll("TTHHadronicTag","TTH Hadronic Tag");
+//		latex->DrawLatex(0.15,0.25,catLabel_humanReadable);
 		outWS->import(*lumi,RecycleConflictNodes());
 
-		if (unblind) plot->SetMinimum(0.0001);
-		plot->GetYaxis()->SetTitleOffset(1.3);
+		if (!unblind) plot->SetMinimum(0.0001);
+//		plot->GetYaxis()->SetTitleOffset(1.3);
 		canv->Modified();
 		canv->Update();
   ///start extra bit for ratio plot///
@@ -1138,16 +1210,37 @@ int main(int argc, char* argv[]){
   //hbplottmp->Scale(plotdata->Integral());
   //hbplottmp->Draw("same");
   int npoints = plotdata->GetN();
+  cout << "hello " <<npoints << "goodbye "<< SigmaBand->GetN() << endl;
   double xtmp,ytmp;//
   int point =0;
   TGraphAsymmErrors *hdatasub = new TGraphAsymmErrors(npoints);
   //hdatasub->SetMarkerSize(defmarkersize);
+  //
+  //
+  //
+TGraph* upBound = new TGraph(nomBkgCurve->GetN());
+TGraph* loBound = new TGraph(nomBkgCurve->GetN());
+TGraph* upBound2 = new TGraph(nomBkgCurve->GetN());
+TGraph* loBound2 = new TGraph(nomBkgCurve->GetN());
+for( int j = 0; j < SigmaBand->GetN(); ++j ){
+  if( j < nomBkgCurve->GetN() ){
+      upBound->SetPoint(j, SigmaBand->GetX()[j], SigmaBand->GetY()[j]);
+      upBound2->SetPoint(j, SigmaBand2->GetX()[j], SigmaBand2->GetY()[j]);
+  }
+  else{
+      loBound->SetPoint(j, SigmaBand->GetX()[j], SigmaBand->GetY()[j]);
+      loBound2->SetPoint(j, SigmaBand2->GetX()[j], SigmaBand2->GetY()[j]);
+  }
+}
+
+
+
   for (int ipoint=0; ipoint<npoints; ++ipoint) {
   //double bkgval = hbplottmp->GetBinContent(ipoint+1);
   plotdata->GetPoint(ipoint, xtmp,ytmp);
   double bkgval = nomBkgCurve->interpolate(xtmp);
   if (!unblind) {
-   if ((xtmp > 115 ) && ( xtmp < 135) ) continue;
+   if ((xtmp > 120 ) && ( xtmp < 130) ) continue;
   }
   //std::cout << "[INFO] plotdata->Integral() " <<  plotdata->Integral() << " ( bins " << npoints  << ") hbkgplots[i]->Integral() " << hbplottmp->Integral() << " (bins " << hbplottmp->GetNbinsX() << std::endl;
  double errhi = plotdata->GetErrorYhigh(ipoint);
@@ -1157,31 +1250,69 @@ int main(int argc, char* argv[]){
  std::cout << "[INFO] Channel  " << " setting point " << point <<" : xtmp "<< xtmp << "  ytmp " << ytmp << " bkgval  " << bkgval << " ytmp-bkgval " << ytmp-bkgval << std::endl;
  bool drawZeroBins_ =1;
  if (!drawZeroBins_) if(fabs(ytmp)<1e-5) continue; 
- hdatasub->SetPoint(point,xtmp,ytmp-bkgval);
- hdatasub->SetPointError(point,0.,0.,errlow,errhi );
+ hdatasub->SetPoint(point,xtmp,ytmp/bkgval);
+ hdatasub->SetPointError(point,0.,0.,errlow/bkgval,errhi/bkgval );
+ oneSigmaBand_r->SetPoint(point,xtmp,1);
+ twoSigmaBand_r->SetPoint(point,xtmp,1);
+cout << "helloa " << xtmp << endl;
+float errLow1 = upBound->Eval(xtmp+0.5)-bkgval;
+float errHigh1 = loBound->Eval(xtmp+0.5)-bkgval;
+float errLow2 = upBound2->Eval(xtmp+0.5)-bkgval;
+float errHigh2 = loBound2->Eval(xtmp+0.5)-bkgval;
+ cout << "Hellolow " << errLow1 << endl;
+
+ oneSigmaBand_r->SetPointError(point,0.,0.,abs(errLow1)*ytmp/(bkgval*bkgval),abs(errHigh1)*ytmp/(bkgval*bkgval));
+ twoSigmaBand_r->SetPointError(point,0.,0.,abs(errLow2)*ytmp/(bkgval*bkgval),abs(errHigh2)*ytmp/(bkgval*bkgval));
  point++;
   } 
   pad2->cd();
-  TH1 *hdummy = new TH1D("hdummyweight","",80,100,180);
-  hdummy->SetMaximum(hdatasub->GetHistogram()->GetMaximum()+1);
-  hdummy->SetMinimum(hdatasub->GetHistogram()->GetMinimum()-1);
+pad2->SetTickx(1);
+pad2->SetTicky(1);
+pad2->SetFrameLineWidth(3);
+pad2->SetGridy();
+pad2->SetBottomMargin(0.3);
+canv->SetBottomMargin(0.3);
+  TH1 *hdummy = new TH1D("hdummyweight","",50,110,160);
   hdummy->GetYaxis()->SetTitle("data - best fit PDF");
-  hdummy->GetYaxis()->SetTitleSize(0.12);
-  hdummy->GetXaxis()->SetTitle("m_{#gamma#gamma} (GeV)");
-  hdummy->GetXaxis()->SetTitleSize(0.12);
+//  hdummy->GetXaxis()->SetTitleOffset(1.2);
+hdummy->SetXTitle("m_{e#mu} [GeV]");
+hdummy->SetYTitle("Obs./Fit");
+hdummy->GetXaxis()->SetTitleFont(42);
+hdummy->GetYaxis()->SetTitleFont(42);
+hdummy->GetXaxis()->SetTitleSize(0.12);
+hdummy->GetYaxis()->SetTitleSize(0.12);
+hdummy->GetXaxis()->SetLabelSize(0.08);
+hdummy->GetYaxis()->SetLabelSize(0.08);
+hdummy->GetYaxis()->SetTitleOffset(0.4);
+hdummy->GetXaxis()->SetTitleOffset(0.8);
+//  hdummy->GetXaxis()->SetTitle("m_{e#mu} (GeV)");
+//  hdummy->GetXaxis()->SetTitleSize(0.12);
   hdummy->Draw("HIST");
+  for( int j = 0; j < SigmaBand->GetN(); ++j ){
+}
+twoSigmaBand_r->SetLineColor(kOrange);
+twoSigmaBand_r->SetFillColor(kOrange);
+twoSigmaBand_r->SetMarkerColor(kOrange);
+twoSigmaBand_r->Draw("L3 SAME");
+oneSigmaBand_r->SetLineColor(kGreen+1);
+oneSigmaBand_r->SetFillColor(kGreen+1);
+oneSigmaBand_r->SetMarkerColor(kGreen+1);
+oneSigmaBand_r->Draw("L3 SAME");
+
 	if (doBands) twoSigmaBand_r->Draw("L3 SAME");
 	if (doBands) oneSigmaBand_r->Draw("L3 SAME");
   hdummy->GetYaxis()->SetNdivisions(808);
 
-  TLine *line3 = new TLine(100,0.,180,0.);
+  TLine *line3 = new TLine(110,1.,160,1.);
   line3->SetLineColor(kRed);
   //line3->SetLineStyle(kDashed);
   line3->SetLineWidth(4.0);
   line3->Draw();
   hdatasub->Draw("PESAME");
+  hdummy->SetMaximum(hdatasub->GetHistogram()->GetMaximum()*1.1);
+  hdummy->SetMinimum(2-(hdatasub->GetHistogram()->GetMaximum()*1.1));
   // enf extra bit for ratio plot///
-    CMS_lumi( canv, 4, 0);
+//    CMS_lumi( canv, 4, 0);
 		canv->Print(Form("%s/bkgplot_%s.pdf",outDir.c_str(),catname.c_str()));
 		canv->Print(Form("%s/bkgplot_%s.png",outDir.c_str(),catname.c_str()));
 		canv->Print(Form("%s/bkgplot_%s.C",outDir.c_str(),catname.c_str()));
